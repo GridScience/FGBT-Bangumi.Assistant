@@ -4,7 +4,7 @@ function injectFromFgbtToBangumi(iframe)
 	var scriptText;
 	var scriptSrc;
 	// 这里输入 Bangumi 端的代码源
-	scriptSrc = "https://raw.githubusercontent.com/GridScience/FGBT-Bangumi.Assistant/raw/master/bangumi/fgbt.bangumi.assistant.bangumi.user.js";
+	scriptSrc = "https://raw.githubusercontent.com/GridScience/FGBT-Bangumi.Assistant/master/bangumi/fgbt.bangumi.assistant.bangumi.user.js";
 	// 这里输入 Bangumi 端的代码
 	scriptText = 'var scnode = script.createElement("script"); scnode.src = "' + scriptSrc + '"; document.head.append(scnode);';
 	iframe.contentWindow.eval(scriptText);
