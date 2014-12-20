@@ -454,6 +454,13 @@ function buildBangumiPage()
 		{
 			if (iframe.readyState == "loaded" || iframe.readyState == "complete")
 			{
+				// 向 Bangumi API 的<iframe>注入代码
+				// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
+				// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
+				if (injectFromFgbtToBangumi instanceof Function)
+				{
+					injectFromFgbtToBangumi(iframe);
+				}
 				iframe.onreadystatechange = null;
 				finishInitialization();
 			}
@@ -463,6 +470,13 @@ function buildBangumiPage()
 	{
 		iframe.onload = function ()
 		{
+			// 向 Bangumi API 的<iframe>注入代码
+			// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
+			// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
+			if (injectFromFgbtToBangumi instanceof Function)
+			{
+				injectFromFgbtToBangumi(iframe);
+			}
 			finishInitialization();
 		}
 	}
