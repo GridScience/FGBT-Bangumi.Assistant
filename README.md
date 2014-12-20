@@ -1,4 +1,4 @@
-未来花园-Bangumi助手 (Bangumi-FGBT Assistant)
+未来花园-Bangumi助手 (FGBT-Bangumi Assistant)
 ======================
 
 **仅在[北航未来花园PT](http://buaabt.cn)中有效。**
