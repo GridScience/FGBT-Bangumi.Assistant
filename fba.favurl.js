@@ -10,20 +10,20 @@ function do_all()
 
 	function inj_loaded()
 	{
-		if (fba_fgbt.readystate == undefined || fba_fgbt.readyState == "loaded" || fba_fgbt.readyState == "complete")
+		if (fba_fgbt.readyState == undefined || fba_fgbt.readyState == "loaded" || fba_fgbt.readyState == "complete")
 		{
 			fba_scripton.onreadystatechange = fba_scripton.onload = function ()
 			{
 				console.log("FGBT-Bangumi Assistant 未来花园端加载完成。");
 			};
-			fba_scripton.src = "https://raw.githubusercontent.com/GridScience/FGBT-Bangumi.Assistant/master/fgbt/fgbt.bangumi.assistant.fgbt.user.js";
-			document.head.appendChild(fba_fgbt);
+			fba_scripton.src = "http://files.cnblogs.com/GridScience/fgbt.bangumi.assistant.fgbt.user.js";
+			document.head.appendChild(fba_scripton);
 		}
 	}
 	
 	fba_fgbt.onreadystatechange = fba_fgbt.onload = inj_loaded;
 	
 	// 先加载用来注入代码至 Bangumi API 页面的代码
-	fba_fgbt.src = "https://raw.githubusercontent.com/GridScience/FGBT-Bangumi.Assistant/master/fba.inject.src.js"
+	fba_fgbt.src = "http://files.cnblogs.com/GridScience/fba.inject.src.js"
 	document.head.appendChild(fba_fgbt);
 }

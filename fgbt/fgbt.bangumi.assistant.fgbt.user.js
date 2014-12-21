@@ -42,6 +42,9 @@ var bangumiPage = null;
 // 我们采用是单实例的 SimplePanel()，用这个变量防止重复 init()
 var panelLoaded = false;
 
+// 是否从浏览器收藏夹启动；更确切地说，是从一个没有 GreaseMonkey 的地方启动
+var isInBrowserFav = injectFromFgbtToBangumi != undefined && injectFromFgbtToBangumi instanceof Function;
+
 /** BangumiCore, cross domain **/
 // @param targetWindow: 将要接收此处发出的消息的窗口
 function BangumiCoreXD(targetWindow)
@@ -363,15 +366,20 @@ function buildBangumiPage()
     txtPassword.name = txtPassword.id = "pword";
 	loginBtn.style.visibility = "hidden";
 	
-	var un = GM_getValue("bangumi-fgbt.username");
-	var pw = GM_getValue("bangumi-fgbt.password");
-	if (un != undefined)
+	if (!isInBrowserFav)
 	{
-		txtUsername.value = un;
-	}
-	if (pw != undefined)
-	{
-		txtPassword.value = pw;
+	/*
+		var un = GM_getValue("bangumi-fgbt.username");
+		var pw = GM_getValue("bangumi-fgbt.password");
+		if (un != undefined)
+		{
+			txtUsername.value = un;
+		}
+		if (pw != undefined)
+		{
+			txtPassword.value = pw;
+		}
+	*/
 	}
     
     lbl = document.createElement("label");
@@ -497,8 +505,11 @@ function buildBangumiPage()
 
 function loginBtn_Click()
 {
-	GM_setValue("bangumi-fgbt.username", bangumiPage["username"].value);
-	GM_setValue("bangumi-fgbt.password", bangumiPage["password"].value);
+	if (!isInBrowserFav)
+	{
+		GM_setValue("bangumi-fgbt.username", bangumiPage["username"].value);
+		GM_setValue("bangumi-fgbt.password", bangumiPage["password"].value);
+	}
 	if (bc != null)
 	{
 		bc.authenticate(bangumiPage["username"].value, bangumiPage["password"].value, loginBtn_Click_Callback);
