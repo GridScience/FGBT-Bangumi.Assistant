@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             fgbt.bangumi.assistant.bangumi
 // @name           FGBT Bangumi Assistant (@Bangumi)
-// @version        0.1.0 (beta, Chrome Only)
+// @version        0.1.5 (beta)
 // @namespace      https://github.com/GridScience
 // @author         micstu@FGBT
 // @description    负责与未来花园页面通信的 Bangumi 页面组件。

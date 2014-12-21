@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @id             fgbt.bangumi.assistant.fgbt
 // @name           FGBT Bangumi Assistant (@FGBT)
-// @version        0.1.0 (beta, Chrome Only)
+// @version        0.1.5 (beta)
 // @namespace      https://github.com/GridScience
 // @author         micstu@FGBT
 // @description    在未来花园动漫版的资源页面引入 Bangumi 记录功能。
@@ -42,8 +42,213 @@ var bangumiPage = null;
 // 我们采用是单实例的 SimplePanel()，用这个变量防止重复 init()
 var panelLoaded = false;
 
-// 是否从浏览器收藏夹启动；更确切地说，是从一个没有 GreaseMonkey 的地方启动
-var isInBrowserFav = injectFromFgbtToBangumi != undefined && injectFromFgbtToBangumi instanceof Function;
+// 是否从浏览器收藏夹启动
+// 该功能（暂时）无法实现，因为要在对方域上运行代码按照我知道的方法都会被拦截
+var isInBrowserFav;
+try
+{
+	isInBrowswerFav = injectFromFgbtToBangumi != undefined && injectFromFgbtToBangumi instanceof Function;
+}
+catch (e)
+{
+	isInBrowswerFav = false;
+}
+// 是否可以启用跨域的 XHR（需要 GreaseMonkey 支持）
+var canUseXDXHR;
+try
+{
+	canUseXDXHR = GM_xmlhttpRequest != undefined && GM_xmlhttpRequest instanceof Function;
+}
+catch(e)
+{
+	canUseXDXHR = false;
+}
+
+/** Provides API functions for querying BGM.tv **/
+// 改进 jabanny 的 BangumiCore，利用 GreaseMonkey 的 GM_xmlhttpRequest 可以跨域的特性
+function BangumiCore2(){
+	/*var apiroot = "http://api.bgm.tv";*/
+	var auth = null;
+	/*"source":encodeURIComponent("BangumiJS-Core/0.8")*/
+	/*var globalGet = {
+		"source":encodeURIComponent("onAir")
+	}*/
+	
+	var createGet = function(append){
+		var globalGet = {
+			"source":encodeURIComponent("onAir")
+		};
+		var cget = "";
+		for(var i in globalGet){
+			cget += encodeURIComponent(i) + "=" + encodeURIComponent(globalGet[i]) + "&";
+		}
+		if(append != null)
+			for(var j in append){
+				cget += encodeURIComponent(j) + "=" + encodeURIComponent(append[j]) + "&";
+			}
+		if(cget.substring(cget.length - 1) == "&")
+				cget = cget.substring(0, cget.length - 1);
+		return "?" + cget;
+	};
+	var xrequest = function (api, post, get, callback){
+		var apiroot = "http://api.bgm.tv";
+		
+		var gmxhr = {};
+		
+		gmxhr.onreadystatechange = function(response){
+			try{
+				console.log(response.readyState);}catch(e){}
+			if(response.readyState == 4){
+				if(typeof callback == "function")
+					callback(response.responseText);
+			}
+		}
+		gmxhr.url = apiroot + api + createGet(get);
+		gmxhr.method = post == null ? "GET" : "POST";
+		
+		if (post)
+		{
+			gmxhr.headers = {"Content-type":"application/x-www-form-urlencoded"};
+			var p = "";
+			for(var x in post){
+				p += encodeURIComponent(x) + "=" + encodeURIComponent(post[x]) + "&";
+			}
+			if(p.substring(p.length - 1) == "&")
+				p = p.substring(0, p.length - 1);
+			gmxhr.data = p;
+		}
+		
+		gmxhr.synchronous = false;
+		
+		GM_xmlhttpRequest(gmxhr);
+	};
+	
+	this.authenticate = function(user, pass, callback){
+		xrequest("/auth",{
+			"username": user,
+			"password": pass
+		},null,function(resp){
+			if(resp == ""){
+				if(typeof callback == "function"){
+					callback({
+						"status":500,
+					});
+				}
+			}else{
+				try{
+					var response = JSON.parse(resp);
+					if(response.auth != null){
+						auth = response;
+						if(typeof callback == "function"){
+							callback({
+								"status":200
+							});
+						}
+						return;
+					}
+					if(typeof callback == "function"){
+						callback({
+							"status":500,
+							"msg":response
+						});
+					}
+				}catch(e){
+					if(typeof callback == "function"){
+						callback({
+							"status":500,
+							"msg":resp
+						});
+					}
+				}
+			}
+		});
+	};
+	
+	this.parseJSON = function(json){
+		auth = eval("(" + json + ")");
+	};
+	
+	this.getToken = function(){
+		if(auth == null)
+			return null;
+		return auth.auth;
+	};
+	
+	this.getUID = function(){
+		if(auth == null)
+			return -1;
+		return auth.id;
+	};
+	
+	this.getLogin = function(){
+		return auth == null ? "": auth.username;
+	};
+	
+	this.getNickname = function(){
+		if(auth == null)
+			return "";
+		return auth.nickname;
+	};
+	
+	this.getSignature = function(){
+		if(auth == null)
+			return "";
+		return auth.sign;
+	};
+	
+	this.getAvatar = function(size){
+		if(auth == null)
+			return "";
+		if(size == null)
+			size = "large";
+		return auth.avatar[size];
+	};
+	
+	this.saveAuth = function(){
+		//Save it somewhere, localstorage perhaps
+	};
+	
+	this.loadAuth = function(){
+		//Load the auth data
+	};
+	
+	this.api = function(url, needsAuth, post, get , callback){
+		var authGet = {};
+		if(needsAuth){
+			authGet["auth"] = this.getToken();
+			authGet["sysusername"] = this.getLogin();
+			authGet["sysuid"] = this.getUID();
+			// 蟹床，试验添加于2014-12-15
+			authGet["sysbuild"] = "201209121322";
+		}
+		for(var i in get){
+			authGet[i] = get[i];
+		}
+		xrequest(url, post, authGet, function(response){
+			if(response != null && response != ""){
+				if(typeof callback == "function"){
+					callback(JSON.parse(response));
+				}
+			}else{
+				if(typeof callback == "function")
+					callback(null);
+			}
+		});
+	};
+	
+	this.clearAuth = function(clearSettings){
+		//Clear the auth data
+	};
+	
+	this.setGlobalGet = function(key, value){
+		globalGet[key] = value;
+		return;
+	};
+	
+	this.getGlobalGet = function(key){
+		return globalGet[key];
+	};
+}
 
 /** BangumiCore, cross domain **/
 // @param targetWindow: 将要接收此处发出的消息的窗口
@@ -185,7 +390,6 @@ function BangumiCoreXD(targetWindow)
 		// Clear the authentication data
 	}
 }
-
 
 function SimplePanel(namespace, doc)
 {
@@ -368,7 +572,6 @@ function buildBangumiPage()
 	
 	if (!isInBrowserFav)
 	{
-	/*
 		var un = GM_getValue("bangumi-fgbt.username");
 		var pw = GM_getValue("bangumi-fgbt.password");
 		if (un != undefined)
@@ -379,7 +582,6 @@ function buildBangumiPage()
 		{
 			txtPassword.value = pw;
 		}
-	*/
 	}
     
     lbl = document.createElement("label");
@@ -452,45 +654,7 @@ function buildBangumiPage()
 	
 	markWatchedBtn.onclick = markWatchedBtn_Click;
 	
-	/** 与 Bangumi 交互区 **/
-	iframe = document.createElement("iframe");
-	iframe.style.display = "none";
-	// 等待 Bangumi API 页面加载完成，然后继续加载过程
-	if (iframe.readyState)
-	{
-		iframe.onreadystatechange = function ()
-		{
-			if (iframe.readyState == "loaded" || iframe.readyState == "complete")
-			{
-				// 向 Bangumi API 的<iframe>注入代码
-				// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
-				// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
-				if (injectFromFgbtToBangumi instanceof Function)
-				{
-					injectFromFgbtToBangumi(iframe);
-				}
-				iframe.onreadystatechange = null;
-				finishInitialization();
-			}
-		};
-	}
-	else
-	{
-		iframe.onload = function ()
-		{
-			// 向 Bangumi API 的<iframe>注入代码
-			// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
-			// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
-			if (injectFromFgbtToBangumi instanceof Function)
-			{
-				injectFromFgbtToBangumi(iframe);
-			}
-			finishInitialization();
-		}
-	}
-	bangumiPage.appendChild(iframe);
-	iframe.src = "http://api.bgm.tv";
-	
+	/** 设置引用 **/
 	bangumiPage["loginForm"] = loginForm;
 	bangumiPage["progForm"] = progForm;
 	bangumiPage["epsForm"] = epsForm;
@@ -499,6 +663,52 @@ function buildBangumiPage()
 	bangumiPage["password"] = txtPassword;
 	bangumiPage["programs"] = progCombo;
 	bangumiPage["eps"] = epsCombo;
+	
+	/** 与 Bangumi 交互区 **/
+	if (!canUseXDXHR)
+	{
+		iframe = document.createElement("iframe");
+		iframe.style.display = "none";
+		// 等待 Bangumi API 页面加载完成，然后继续加载过程
+		if (iframe.readyState)
+		{
+			iframe.onreadystatechange = function ()
+			{
+				if (iframe.readyState == "loaded" || iframe.readyState == "complete")
+				{
+					// 向 Bangumi API 的<iframe>注入代码
+					// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
+					// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
+					if (injectFromFgbtToBangumi instanceof Function)
+					{
+						injectFromFgbtToBangumi(iframe);
+					}
+					iframe.onreadystatechange = null;
+					finishInitialization();
+				}
+			};
+		}
+		else
+		{
+			iframe.onload = function ()
+			{
+				// 向 Bangumi API 的<iframe>注入代码
+				// 这个函数仅会在从收藏夹中启动时（javascript:）调用，此时
+				// 用户不应该装有 GreaseMonkey，这样我们就要自己去在窗口加载完成的时候 eval()
+				if (injectFromFgbtToBangumi instanceof Function)
+				{
+					injectFromFgbtToBangumi(iframe);
+				}
+				finishInitialization();
+			}
+		}
+		bangumiPage.appendChild(iframe);
+		iframe.src = "http://api.bgm.tv";
+	}
+	else
+	{
+		finishInitialization();
+	}
 	
 	return bangumiPage;
 }
@@ -676,7 +886,7 @@ function main()
 
 	showPanelButton.style = "padding-left:8px;"
 	var downloadSeedLink = document.getElementsByClassName("PrivateBTSeedInfoListDownLink")[0].children[1].children[1];
-	downloadSeedLink.parentNode.insertBefore(showPanelButton, null);
+	downloadSeedLink.parentNode.appendChild(showPanelButton);
 }
 
 // 这些必须要等到 Bangumi API 页面加载完成之后才能进行
@@ -684,7 +894,14 @@ function finishInitialization()
 {
 	if (bc == undefined || bc == null)
 	{
-		bc = new BangumiCoreXD(iframe.contentWindow);
+		if (canUseXDXHR)
+		{
+			bc = new BangumiCore2();
+		}
+		else
+		{
+			bc = new BangumiCoreXD(iframe.contentWindow);
+		}
 		bangumiPage["loginBtn"].style.visibility = "visible";
 	}
 }
