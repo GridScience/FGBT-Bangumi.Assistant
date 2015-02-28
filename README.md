@@ -1,8 +1,8 @@
 # 未来花园-Bangumi助手 (FGBT-Bangumi Assistant)
 
-**仅在[北航未来花园PT](http://buaabt.cn)中有效。**
+**仅在[北航未来花园PT](http://buaabt.cn)中有效。** (2015年1月，未来花园BT服务关闭，该 UserScript 脚本已经无处使用。)
 
-建立未来花园动漫版与 Bangumi 之间的联系。通过小界面，可以很容易地将状态同步到 Bangumi。
+建立未来花园动漫版与 Bangumi 之间的联系。通过小界面，可以很容易地将状态同步到 Bangumi。<span style="background-color: black; color: black">没采用任何样式，界面十分难看，不要吐槽。</span>
 
 ## 使用方法
 
